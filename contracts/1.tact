@@ -18,18 +18,23 @@ message Subtract {
 }
 
 contract Task1 with Deployable {
-    counter: Int as int32;
+  counter: Int as int32;
 
-    init() {
-      self.counter = 0;
-    }
+  init() {
+    self.counter = 0;
+  }
 
-    receive(msg: Add) {
-    }
-    
-    receive(msg: Subtract) {
-    }
+  receive(msg: Add) {
+    self.counter = self.counter + 1;
+  }
 
-    get fun counter(): Int {
+  receive(msg: Subtract) {
+    if (self.counter > 0) {
+      self.counter = self.counter - 1;
     }
+  }
+
+  get fun counter(): Int {
+    return self.counter;
+  }
 }
