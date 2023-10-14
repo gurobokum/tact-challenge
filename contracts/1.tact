@@ -30,9 +30,6 @@ contract Task1 with Deployable {
 
   receive(msg: Subtract) {
     self.counter = self.counter - msg.number;
-    if (self.counter < 0) {
-      self.counter = 0;
-    }
   }
 
   get fun counter(): Int {
