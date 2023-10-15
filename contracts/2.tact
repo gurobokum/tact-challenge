@@ -26,8 +26,23 @@ contract Task2 with Deployable {
   }
   
   receive(msg: Refund) {
+    require(context().sender == self.admin, "Only admin can refund TONs");
+    send(SendParameters{
+      to: msg.sender,
+      value: 0,
+      mode: SendRemainingValue + SendIgnoreErrors
+    });
   }
 
   receive(msg: Slice) {
+    send(SendParameters{
+      to: self.admin,
+      value: 0,
+      mode: SendRemainingValue + SendIgnoreErrors,
+      body: beginCell()
+        .storeAddress(sender())
+        .storeRef(msg.asCell())
+        .endCell()
+    });
   }
 }
