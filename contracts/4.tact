@@ -48,23 +48,81 @@ message NftWithdrawal {
 
 contract Task4 with Deployable {
   seed: Int as uint128;
+  nft: Address? = null;
+  nftAddress: Address? = null;
+  nftOwner: Address? = null;
+  locked_till: Int as uint32 = 0;
   
   init(seed: Int) {
     self.seed = seed; // needed to deploy multiple smart contracts copies from one admin address
   }
 
   receive(msg: OwnershipAssigned) {
+    let ctx: Context = context();
+    if (self.nftAddress != null) {
+      send(SendParameters{
+        to: ctx.sender,
+        value: 0,
+        mode: SendRemainingValue + SendIgnoreErrors,
+        bounce: true,
+        body: Transfer{
+          queryId: msg.queryId,
+          newOwner: msg.prevOwner,
+          responseDestination: msg.prevOwner,
+          customPayload: null,
+          forwardAmount: 0,
+          forwardPayload: emptySlice()
+        }.toCell()
+      });
+      return;
+    }
+    let time: Int = msg.forwardPayload.loadUint(32);
+
+    self.nftAddress = ctx.sender;
+    self.locked_till = now() + time;
+    self.nftOwner = msg.prevOwner;
   }
 
+  // Send by the owner of NFT
   receive(msg: NftWithdrawal) {
+    let ctx: Context = context();
+    require(ctx.sender == self.nftOwner, "Invalid sender");
+    if (now() < self.locked_till) {
+      self.reply("NFT is still locked".asComment());
+      return;
+    }
+    send(SendParameters{
+      to: self.nftAddress!!,
+      value: 0,
+      mode: SendRemainingBalance,
+      bounce: true,
+      body: Transfer{
+        queryId: msg.queryId,
+        newOwner: ctx.sender,
+        responseDestination: ctx.sender,
+        customPayload: null,
+        forwardAmount: 0,
+        forwardPayload: emptySlice()
+      }.toCell()
+    });
+    self.nftAddress = null;
+    self.nftOwner = null;
+    self.locked_till = 0;
   }
 
   get fun time(): Int {
+    let time: Int = self.locked_till - now();
+    if (time < 0) {
+      return 0;
+    }
+    return time;
   }
 
   get fun nft(): Address? {
+    return self.nftAddress;
   }
 
   get fun owner(): Address? {
+    return self.nftOwner;
   }
 }
