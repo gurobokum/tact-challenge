@@ -112,11 +112,11 @@ contract Task5 with Deployable {
     }
     let index: Int = random(0, self.last_index);
     self.total_profit = self.total_profit + ton("2");
-    let value: Int = myBalance() - self.total_profit - storage_fee - ctx.readForwardFee();
+    let value: Int = myBalance() - self.total_profit -  ctx.readForwardFee();
     if (index == self.last_index) { // send NFT back
       send(SendParameters{
         to: ctx.sender,
-        value: value,
+        value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         body: Transfer{
           queryId: msg.queryId,
@@ -131,7 +131,7 @@ contract Task5 with Deployable {
     }
     send(SendParameters{
       to: self.nft_collection.get(index)!!,
-      value: value, 
+      value: 0,
       mode: SendRemainingValue + SendIgnoreErrors,
       body: Transfer{
         queryId: msg.queryId,
@@ -168,7 +168,7 @@ contract Task5 with Deployable {
       send(SendParameters{
         to: nftAddress,
         value: 0,
-        mode: SendIgnoreErrors,
+        mode: SendPayGasSeparately + SendIgnoreErrors,
         body: Transfer{
           queryId: i,
           newOwner: self.owner,

@@ -81,9 +81,9 @@ contract Task3 with Deployable {
     let ctx: Context = context();
     send(SendParameters{
       to: ctx.sender,
+      bounce: false,
       value: 0,
       mode: SendRemainingValue + SendIgnoreErrors,
-      bounce: false,
       body: TokenTransfer{
         queryId: 0,
         amount: msg.amount,
@@ -126,6 +126,7 @@ contract Task3 with Deployable {
 
       send(SendParameters{
         to: self.jettonAddressB,
+        bounce: false,
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         body: TokenTransfer{
@@ -148,6 +149,7 @@ contract Task3 with Deployable {
 
       send(SendParameters{
         to: self.jettonAddressA,
+        bounce: false,
         value: 0,
         mode: SendRemainingValue + SendIgnoreErrors,
         body: TokenTransfer{
