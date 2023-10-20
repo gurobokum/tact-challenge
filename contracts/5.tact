@@ -151,7 +151,7 @@ contract Task5 with Deployable {
     send(SendParameters{
       to: self.owner, 
       value: myBalance() - ton("0.1"),
-      mode: SendIgnoreErrors,
+      mode: SendPayGasSeparately + SendIgnoreErrors,
       data: AdminFetchProfit{queryId: msg.queryId}.toCell()
     });
     self.total_profit = 0;
