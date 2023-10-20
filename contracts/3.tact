@@ -67,12 +67,110 @@ contract Task3 with Deployable {
     self.decimal = 1000000000;
   }
 
+  fun _price(jetton: Address): Int {
+    if (jetton == self.jettonAddressA) {
+      return self.bAmount * self.decimal / self.aAmount;
+    }
+    if (jetton == self.jettonAddressB) {
+      return self.aAmount * self.decimal / self.bAmount;
+    }
+    return 0;
+  }
+
+  fun _sendBack(msg: TokenNotification) {
+    let ctx: Context = context();
+    send(SendParameters{
+      to: ctx.sender,
+      value: 0,
+      mode: SendRemainingValue + SendIgnoreErrors,
+      bounce: false,
+      body: TokenTransfer{
+        queryId: 0,
+        amount: msg.amount,
+        destination: msg.from,
+        responseDestination: myAddress(),
+        customPayload: null,
+        forwardTonAmount: ton("0.01"),
+        forwardPayload: emptySlice()
+      }.toCell()
+    });
+  }
+
   receive(msg: TokenNotification) {
+    let ctx: Context = context();
+    require(
+      ctx.sender == self.jettonAddressA ||
+      ctx.sender == self.jettonAddressB,
+      "Not supported jetton addresses"
+    );
+    if (msg.from == self.owner) {
+      if (ctx.sender == self.jettonAddressA) {
+        self.aAmount = self.aAmount + msg.amount;
+        return;
+      }
+      self.bAmount = self.bAmount + msg.amount;
+      return;
+    }
+    let price: Int = self._price(ctx.sender);
+    let amount: Int = price * msg.amount / self.decimal;
+    if (amount == 0) {
+      return;
+    }
+    if (ctx.sender == self.jettonAddressA) {
+      if (amount > self.bAmount) {
+        self._sendBack(msg);
+        return;
+      }
+      self.bAmount = self.bAmount - amount;
+      self.aAmount = self.aAmount + msg.amount;
+
+      send(SendParameters{
+        to: self.jettonAddressB,
+        value: 0,
+        mode: SendRemainingValue + SendIgnoreErrors,
+        body: TokenTransfer{
+          queryId: msg.queryId,
+          amount: amount,
+          destination: msg.from, 
+          responseDestination: myAddress(),
+          customPayload: null,
+          forwardTonAmount: ton("0.01"),
+          forwardPayload: msg.forwardPayload 
+        }.toCell()
+      });
+    } else {
+      if (amount > self.aAmount) {
+        self._sendBack(msg);
+        return;
+      }
+      self.aAmount = self.aAmount - amount;
+      self.bAmount = self.bAmount + msg.amount;
+
+      send(SendParameters{
+        to: self.jettonAddressA,
+        value: 0,
+        mode: SendRemainingValue + SendIgnoreErrors,
+        body: TokenTransfer{
+          queryId: msg.queryId,
+          amount: amount,
+          destination: msg.from, 
+          responseDestination: myAddress(),
+          customPayload: null,
+          forwardTonAmount: ton("0.01"),
+          forwardPayload: msg.forwardPayload 
+        }.toCell()
+      });
+    }
   } 
   
   get fun price(jetton: Address): Int { 
+    return self._price(jetton);
   }
   
   get fun balance(jetton: Address): Int { 
+    if (jetton == self.jettonAddressA) {
+      return self.aAmount;
+    }
+    return self.bAmount;
   }
 }
